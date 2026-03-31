@@ -2,10 +2,27 @@ import mongoose from 'mongoose';
 
 const jobSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    company: { type: String, required: true },
-    description: { type: String, required: true },
-    skillsRequired: [String],
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    company: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    skillsRequired: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
 
     location: {
       type: {
@@ -17,15 +34,36 @@ const jobSchema = new mongoose.Schema(
         type: [Number], // [lng, lat]
         required: true,
       },
-      city: String,
-      state: String,
-      country: String,
-      address: String,
+      city: {
+        type: String,
+        default: '',
+      },
+      state: {
+        type: String,
+        default: '',
+      },
+      country: {
+        type: String,
+        default: '',
+      },
+      address: {
+        type: String,
+        default: '',
+      },
     },
 
-    salary: String,
-    experienceLevel: String,
-    employmentType: String,
+    salary: {
+      type: String,
+      default: '',
+    },
+    experienceLevel: {
+      type: String,
+      default: '',
+    },
+    employmentType: {
+      type: String,
+      default: '',
+    },
     workMode: {
       type: String,
       enum: ['remote', 'hybrid', 'onsite'],
@@ -49,4 +87,6 @@ const jobSchema = new mongoose.Schema(
 
 jobSchema.index({ location: '2dsphere' });
 
-export default mongoose.model('Job', jobSchema);
+const Job = mongoose.model('Job', jobSchema);
+
+export default Job;

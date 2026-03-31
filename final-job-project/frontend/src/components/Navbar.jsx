@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+
 const Navbar = ({ dark, setDark }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Navbar = ({ dark, setDark }) => {
 
         <nav className="flex items-center gap-4 text-sm font-medium">
           <Link to="/jobs" className="text-slate-700 dark:text-slate-200">Jobs</Link>
+          <Link to="/jobs/nearby" className="text-slate-700 dark:text-slate-200">Nearby jobs</Link>
           {user && <Link to="/dashboard" className="text-slate-700 dark:text-slate-200">Dashboard</Link>}
           <button
             onClick={() => setDark(!dark)}

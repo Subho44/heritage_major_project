@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import JobsPage from './pages/JobsPage';
 import DashboardPage from './pages/DashboardPage';
+import Nearbyjob from './pages/Nearbyjob';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
@@ -13,6 +14,7 @@ const App = () => {
 
   useEffect(() => {
     const root = document.documentElement;
+
     if (dark) {
       root.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -23,24 +25,19 @@ const App = () => {
   }, [dark]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout dark={dark} setDark={setDark} />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/jobs" element={<JobsPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+    <Routes>
+      <Route element={<MainLayout dark={dark} setDark={setDark} />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/jobs" element={<JobsPage />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/jobs/nearby" element={<Nearbyjob />} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+      </Route>
+    </Routes>
   );
 };
 
