@@ -14,7 +14,6 @@ const App = () => {
 
   useEffect(() => {
     const root = document.documentElement;
-
     if (dark) {
       root.classList.add('dark');
       localStorage.setItem('theme', 'dark');

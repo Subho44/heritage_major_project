@@ -1,6 +1,5 @@
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -13,19 +12,19 @@ const DEFAULT_CENTER = [22.5726, 88.3639];
 
 const Jobmap = ({ userCoords, jobs = [] }) => {
   const center =
-    userCoords?.lat && userCoords?.lng
+    typeof userCoords?.lat === 'number' && typeof userCoords?.lng === 'number'
       ? [userCoords.lat, userCoords.lng]
       : DEFAULT_CENTER;
 
   return (
     <div className="h-[400px] overflow-hidden rounded-2xl border border-slate-300 dark:border-slate-800">
-      <MapContainer center={center} zoom={12} className="h-full w-full">
+      <MapContainer center={center} zoom={12} scrollWheelZoom className="h-full w-full">
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {userCoords?.lat && userCoords?.lng && (
+        {typeof userCoords?.lat === 'number' && typeof userCoords?.lng === 'number' && (
           <Marker position={[userCoords.lat, userCoords.lng]}>
             <Popup>Your Location</Popup>
           </Marker>

@@ -12,15 +12,15 @@ export const AuthProvider = ({ children }) => {
       const savedUser = localStorage.getItem('user');
       const savedToken = localStorage.getItem('token');
 
-      if (savedUser) {
+      if (savedUser && savedUser !== 'undefined' && savedUser !== 'null') {
         setUser(JSON.parse(savedUser));
       }
 
-      if (savedToken) {
+      if (savedToken && savedToken !== 'undefined' && savedToken !== 'null') {
         setToken(savedToken);
       }
     } catch (error) {
-      console.error('AuthContext localStorage error:', error);
+      console.error('AuthContext parse error:', error);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       setUser(null);
@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
   const login = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
-
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', authToken);
   };
@@ -41,7 +40,6 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
@@ -63,11 +61,9 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
-
   return context;
 };
 
