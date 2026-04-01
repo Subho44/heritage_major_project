@@ -27,16 +27,17 @@ const LoginPage = () => {
     try {
       const payload = {
         email: form.email.trim().toLowerCase(),
-        password: form.password,
+        password: form.password.trim(),
         role: form.role,
       };
 
       const { data } = await api.post('/auth/login', payload);
 
-      setMessage(data.message);
-      setDevOtp(data.devOtp || '');
+      setMessage(data?.message || 'OTP sent successfully');
+      setDevOtp(data?.devOtp || '');
       setStep(2);
     } catch (error) {
+      console.error('Send OTP error:', error);
       setMessage(error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
@@ -56,10 +57,21 @@ const LoginPage = () => {
       };
 
       const { data } = await api.post('/auth/verify-otp', payload);
+
+      if (!data?.user || !data?.token) {
+        throw new Error('Invalid verify response from server');
+      }
+
       saveAuth(data);
+      setMessage(data?.message || 'Login successful');
       navigate('/dashboard');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'OTP verification failed');
+      console.error('Verify OTP error:', error);
+      setMessage(
+        error.response?.data?.message ||
+          error.message ||
+          'OTP verification failed'
+      );
     } finally {
       setLoading(false);
     }
@@ -68,6 +80,7 @@ const LoginPage = () => {
   const resendOtp = async () => {
     setLoading(true);
     setMessage('');
+    setDevOtp('');
 
     try {
       const payload = {
@@ -76,9 +89,11 @@ const LoginPage = () => {
       };
 
       const { data } = await api.post('/auth/resend-otp', payload);
-      setMessage(data.message);
-      setDevOtp(data.devOtp || '');
+
+      setMessage(data?.message || 'OTP resent successfully');
+      setDevOtp(data?.devOtp || '');
     } catch (error) {
+      console.error('Resend OTP error:', error);
       setMessage(error.response?.data?.message || 'Resend OTP failed');
     } finally {
       setLoading(false);
@@ -88,15 +103,19 @@ const LoginPage = () => {
   return (
     <div className="mx-auto max-w-md px-4 py-12">
       <div className="rounded-2xl border bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h1 className="mb-6 text-3xl font-bold dark:text-white">Login With Email OTP</h1>
+        <h1 className="mb-6 text-3xl font-bold dark:text-white">
+          Login With Email OTP
+        </h1>
 
         {step === 1 ? (
           <form onSubmit={sendOtp} className="space-y-4">
             <input
+              type="email"
               className="w-full rounded-xl border p-3 dark:bg-slate-950"
               placeholder="Email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
             />
 
             <input
@@ -105,6 +124,7 @@ const LoginPage = () => {
               placeholder="Password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
             />
 
             <select
@@ -119,7 +139,7 @@ const LoginPage = () => {
 
             <button
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 p-3 text-white dark:bg-indigo-600"
+              className="w-full rounded-xl bg-slate-900 p-3 text-white disabled:opacity-60 dark:bg-indigo-600"
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
@@ -138,11 +158,12 @@ const LoginPage = () => {
               placeholder="Enter OTP"
               value={form.otp}
               onChange={(e) => setForm({ ...form, otp: e.target.value })}
+              required
             />
 
             <button
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-600 p-3 text-white"
+              className="w-full rounded-xl bg-emerald-600 p-3 text-white disabled:opacity-60"
             >
               {loading ? 'Verifying...' : 'Verify OTP & Login'}
             </button>
@@ -151,7 +172,7 @@ const LoginPage = () => {
               type="button"
               onClick={resendOtp}
               disabled={loading}
-              className="w-full rounded-xl border border-indigo-600 p-3 text-indigo-600"
+              className="w-full rounded-xl border border-indigo-600 p-3 text-indigo-600 disabled:opacity-60"
             >
               Resend OTP
             </button>

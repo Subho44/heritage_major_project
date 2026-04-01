@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import {Server} from 'socket.io';
+import http from 'http';
 import path from 'path';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -11,22 +13,15 @@ import adminRoutes from './routes/adminRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors:{
+    origin:'http://localhost:5173',
+    methods:['GET','POST'],
+  }
+})
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -45,6 +40,23 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 
+const users = {};
+io.on('connection',(socket)=>{
+  console.log('user connected:',socket.id);
+  socket.on('join',(userId)=>{
+    users[userId] = socket.id;
+  });
+  socket.on('sendMessage',(messageData)=>{
+    const reciverscoketid = users[messageData.reciver];
+
+    if(reciverscoketid) {
+      io.to(reciverscoketid).emit('reciveMessage',messageData);
+    }
+  });
+  socket.on('disconnect',()=>{
+    console.log('user disconnected');
+  })
+})
 app.use((err, req, res, next) => {
   console.error(err.message);
   res.status(500).json({ message: err.message || 'Server error' });
