@@ -8,12 +8,14 @@ import JobsPage from './pages/JobsPage';
 import DashboardPage from './pages/DashboardPage';
 import Nearbyjob from './pages/Nearbyjob';
 import ProtectedRoute from './components/ProtectedRoute';
+import Chatpage from './pages/Chatpage';
 
 const App = () => {
   const [dark, setDark] = useState(localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
     const root = document.documentElement;
+
     if (dark) {
       root.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -34,6 +36,7 @@ const App = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/jobs/nearby" element={<Nearbyjob />} />
+          <Route path="/chat" element={<Chatpage />} />
         </Route>
       </Route>
     </Routes>

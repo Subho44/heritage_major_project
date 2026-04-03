@@ -2,7 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-
 const Navbar = ({ dark, setDark }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -20,21 +19,43 @@ const Navbar = ({ dark, setDark }) => {
         </Link>
 
         <nav className="flex items-center gap-4 text-sm font-medium">
-          <Link to="/jobs" className="text-slate-700 dark:text-slate-200">Jobs</Link>
-          <Link to="/jobs/nearby" className="text-slate-700 dark:text-slate-200">Nearby jobs</Link>
-          {user && <Link to="/dashboard" className="text-slate-700 dark:text-slate-200">Dashboard</Link>}
+          <Link to="/jobs" className="text-slate-700 dark:text-slate-200">
+            Jobs
+          </Link>
+
+          {user && (
+            <>
+              <Link to="/chat" className="text-slate-700 dark:text-slate-200">
+                Chat System
+              </Link>
+              <Link to="/jobs/nearby" className="text-slate-700 dark:text-slate-200">
+                Nearby Jobs
+              </Link>
+              <Link to="/dashboard" className="text-slate-700 dark:text-slate-200">
+                Dashboard
+              </Link>
+            </>
+          )}
+
           <button
             onClick={() => setDark(!dark)}
             className="rounded-full border p-2 dark:border-slate-700"
           >
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
           {!user ? (
-            <Link to="/login" className="rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-indigo-600">
+            <Link
+              to="/login"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-indigo-600"
+            >
               Login
             </Link>
           ) : (
-            <button onClick={handleLogout} className="rounded-lg bg-rose-600 px-4 py-2 text-white">
+            <button
+              onClick={handleLogout}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-white"
+            >
               Logout
             </button>
           )}

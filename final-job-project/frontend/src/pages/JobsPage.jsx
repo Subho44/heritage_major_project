@@ -60,7 +60,7 @@ const JobsPage = () => {
             setFilters({ ...filters, search: e.target.value })
           }
         />
-
+       
         <input
           className="rounded-xl border p-3 dark:bg-slate-950"
           placeholder="City"
