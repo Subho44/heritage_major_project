@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/api';
 import JobCard from '../components/JobCard';
 import { useAuth } from '../context/AuthContext';
+import Chatboat from '../components/Chatboat';
 
 const JobsPage = () => {
   const [jobs, setJobs] = useState([]);
@@ -107,7 +108,12 @@ const JobsPage = () => {
               canApply={user?.role === 'jobseeker'}
             />
           ))}
+
+          <div>
+           <Chatboat/>
+          </div>  
         </div>
+        
       ) : (
         <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           No jobs found.

@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import { Server } from 'socket.io';
 import http from 'http';
 import path from 'path';
-
+import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
@@ -12,6 +12,13 @@ import applicationRoutes from './routes/applicationRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import Groq from 'groq-sdk';
+
+
+dotenv.config();
+const groq = new Groq({
+  apiKey:process.env.GROQ_API_KEY,
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +30,9 @@ app.use(
   })
 );
 
+
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -31,6 +41,37 @@ app.use('/uploads', express.static(path.resolve('src/uploads')));
 app.get('/', (req, res) => {
   res.json({ message: 'AI Smart Job Portal API running' });
 });
+//chat
+app.post('/api/chat', async(req,res)=>{
+  try {
+    const {message} = req.body;
+    if(!message) {
+      return res.status(400).json({reply:"message is required"});
+    }
+
+    const completion = await groq.chat.completions.create({
+      model:'llama-3.3-70b-versatile',
+      messages:[
+        {
+          role:'system',
+          content:'you are a helpfull chatboat..'
+        },
+        {
+          role:'user',
+          content:message,
+        },
+      ],
+      temperature:0.7,
+      max_tokens:300,
+    });
+
+    const reply = completion.choices[0]?.message?.content ||'No response';
+    res.json({reply});
+
+  } catch(err){
+    console.error(err);
+  }
+})
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
