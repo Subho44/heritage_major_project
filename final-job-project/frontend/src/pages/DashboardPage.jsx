@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import Resumfd from '../components/Resumfd';
 
 const Card = ({ title, value }) => (
-  <div className="rounded-2xl border bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+  <div className="rounded-2xl border bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <p className="text-sm text-slate-500 dark:text-slate-400">{title}</p>
-    <h3 className="mt-2 text-3xl font-bold dark:text-white">{value}</h3>
+    <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">{value}</h3>
   </div>
 );
 
@@ -30,6 +31,7 @@ const DashboardPage = () => {
   const [applications, setApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [resume, setResume] = useState(null);
+  const [message, setMessage] = useState('');
 
   const [profile, setProfile] = useState({
     name: '',
@@ -58,15 +60,13 @@ const DashboardPage = () => {
     },
   });
 
-  const [message, setMessage] = useState('');
-
   const fetchAll = async () => {
     try {
       setMessage('');
 
       if (user?.role === 'admin') {
         const { data } = await api.get('/admin/stats');
-        setStats(data);
+        setStats(data || null);
       }
 
       if (user?.role === 'recruiter') {
@@ -74,8 +74,9 @@ const DashboardPage = () => {
           api.get('/jobs/my-jobs'),
           api.get('/applications/recruiter/list'),
         ]);
-        setJobs(Array.isArray(jobsRes.data) ? jobsRes.data : []);
-        setApplications(Array.isArray(appRes.data) ? appRes.data : []);
+
+        setJobs(Array.isArray(jobsRes?.data) ? jobsRes.data : []);
+        setApplications(Array.isArray(appRes?.data) ? appRes.data : []);
       }
 
       if (user?.role === 'jobseeker') {
@@ -83,34 +84,37 @@ const DashboardPage = () => {
           api.get('/applications/my/list'),
           api.get('/users/resume'),
         ]);
-        setApplications(Array.isArray(appRes.data) ? appRes.data : []);
-        setResume(resumeRes.data || null);
+
+        setApplications(Array.isArray(appRes?.data) ? appRes.data : []);
+        setResume(resumeRes?.data?.resume || resumeRes?.data || null);
       }
 
       const notificationRes = await api.get('/notifications');
-      setNotifications(Array.isArray(notificationRes.data) ? notificationRes.data : []);
+      setNotifications(Array.isArray(notificationRes?.data) ? notificationRes.data : []);
     } catch (error) {
       console.error('Dashboard fetch error:', error);
-      setMessage(error.response?.data?.message || 'Failed to load dashboard');
+      setMessage(error?.response?.data?.message || 'Failed to load dashboard');
     }
   };
 
   useEffect(() => {
     if (user) {
       setProfile({
-        name: user.name || '',
-        phone: user.phone || '',
-        location: user.location || '',
-        skills: Array.isArray(user.skills) ? user.skills.join(', ') : user.skills || '',
-        bio: user.bio || '',
-        companyName: user.companyName || '',
+        name: user?.name || '',
+        phone: user?.phone || '',
+        location: user?.location || '',
+        skills: Array.isArray(user?.skills) ? user.skills.join(', ') : user?.skills || '',
+        bio: user?.bio || '',
+        companyName: user?.companyName || '',
       });
+
       fetchAll();
     }
   }, [user]);
 
   const updateProfile = async (e) => {
     e.preventDefault();
+
     try {
       const payload = {
         ...profile,
@@ -121,17 +125,18 @@ const DashboardPage = () => {
       };
 
       const { data } = await api.put('/users/profile', payload);
-      setMessage(data.message);
+      setMessage(data?.message || 'Profile updated successfully');
+
       if (typeof refreshProfile === 'function') {
         refreshProfile();
       }
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Profile update failed');
+      setMessage(error?.response?.data?.message || 'Profile update failed');
     }
   };
 
   const uploadResume = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
@@ -141,10 +146,11 @@ const DashboardPage = () => {
       const { data } = await api.post('/users/resume', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResume(data.resume);
-      setMessage(data.message);
+
+      setResume(data?.resume || null);
+      setMessage(data?.message || 'Resume upload successful');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Resume upload failed');
+      setMessage(error?.response?.data?.message || 'Resume upload failed');
     }
   };
 
@@ -156,16 +162,23 @@ const DashboardPage = () => {
         title: jobForm.title,
         company: jobForm.company,
         description: jobForm.description,
-        skillsRequired: jobForm.skillsRequired,
+        skillsRequired: jobForm.skillsRequired
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
         salary: jobForm.salary,
         experienceLevel: jobForm.experienceLevel,
         employmentType: jobForm.employmentType,
         workMode: jobForm.workMode,
         location: {
-          coordinates: [
-            Number(jobForm.location.coordinates[0]),
-            Number(jobForm.location.coordinates[1]),
-          ],
+          coordinates:
+            jobForm.location.coordinates[0] !== '' &&
+            jobForm.location.coordinates[1] !== ''
+              ? [
+                  Number(jobForm.location.coordinates[0]),
+                  Number(jobForm.location.coordinates[1]),
+                ]
+              : [],
           city: jobForm.location.city,
           state: jobForm.location.state,
           country: jobForm.location.country,
@@ -174,7 +187,7 @@ const DashboardPage = () => {
       };
 
       const { data } = await api.post('/jobs', payload);
-      setMessage(data.message);
+      setMessage(data?.message || 'Job posted successfully');
 
       setJobForm({
         title: '',
@@ -196,16 +209,17 @@ const DashboardPage = () => {
 
       fetchAll();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Job create failed');
+      setMessage(error?.response?.data?.message || 'Job create failed');
     }
   };
 
   const updateStatus = async (id, status) => {
     try {
-      await api.put(`/applications/${id}/status`, { status });
+      const { data } = await api.put(`/applications/${id}/status`, { status });
+      setMessage(data?.message || 'Status updated successfully');
       fetchAll();
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Status update failed');
+      setMessage(error?.response?.data?.message || 'Status update failed');
     }
   };
 
@@ -213,7 +227,7 @@ const DashboardPage = () => {
     <div className="mx-auto max-w-7xl px-4 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold dark:text-white">
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
             Welcome, {user?.name || 'User'}
           </h1>
           <p className="text-slate-600 dark:text-slate-300">
@@ -221,9 +235,12 @@ const DashboardPage = () => {
           </p>
         </div>
       </div>
+      <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+              <Resumfd />
+            </div>
 
       {message && (
-        <p className="mb-4 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-600 dark:bg-indigo-950/40">
+        <p className="mb-4 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
           {message}
         </p>
       )}
@@ -231,19 +248,25 @@ const DashboardPage = () => {
       {user?.role === 'admin' && stats && (
         <>
           <div className="grid gap-4 md:grid-cols-4">
-            <Card title="Total Users" value={stats.users || 0} />
-            <Card title="Total Jobs" value={stats.jobs || 0} />
-            <Card title="Applications" value={stats.applications || 0} />
-            <Card title="Notifications" value={stats.notifications || 0} />
+            <Card title="Total Users" value={stats?.users || 0} />
+            <Card title="Total Jobs" value={stats?.jobs || 0} />
+            <Card title="Applications" value={stats?.applications || 0} />
+            <Card title="Notifications" value={stats?.notifications || 0} />
           </div>
 
           <div className="mt-6 rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-4 text-xl font-semibold dark:text-white">Role Analytics</h2>
+            <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+              Role Analytics
+            </h2>
+
             <div className="grid gap-4 md:grid-cols-3">
-              {Array.isArray(stats.roleStats) &&
+              {Array.isArray(stats?.roleStats) && stats.roleStats.length > 0 ? (
                 stats.roleStats.map((item) => (
-                  <Card key={item._id} title={item._id} value={item.total} />
-                ))}
+                  <Card key={item?._id} title={item?._id} value={item?.total || 0} />
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No role analytics found.</p>
+              )}
             </div>
           </div>
         </>
@@ -252,26 +275,28 @@ const DashboardPage = () => {
       {user?.role === 'recruiter' && (
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-4 text-xl font-semibold dark:text-white">Post New Job</h2>
+            <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+              Post New Job
+            </h2>
 
             <form onSubmit={createJob} className="grid gap-3">
               <input
                 value={jobForm.title}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Job Title"
                 onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
               />
 
               <input
                 value={jobForm.company}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Company"
                 onChange={(e) => setJobForm({ ...jobForm, company: e.target.value })}
               />
 
               <input
                 value={jobForm.experienceLevel}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Experience"
                 onChange={(e) =>
                   setJobForm({ ...jobForm, experienceLevel: e.target.value })
@@ -280,14 +305,14 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.salary}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Salary"
                 onChange={(e) => setJobForm({ ...jobForm, salary: e.target.value })}
               />
 
               <input
                 value={jobForm.skillsRequired}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Skills comma separated"
                 onChange={(e) =>
                   setJobForm({ ...jobForm, skillsRequired: e.target.value })
@@ -296,7 +321,7 @@ const DashboardPage = () => {
 
               <select
                 value={jobForm.employmentType}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 onChange={(e) =>
                   setJobForm({ ...jobForm, employmentType: e.target.value })
                 }
@@ -308,7 +333,7 @@ const DashboardPage = () => {
 
               <select
                 value={jobForm.workMode}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 onChange={(e) =>
                   setJobForm({ ...jobForm, workMode: e.target.value })
                 }
@@ -320,7 +345,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.address}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Address"
                 onChange={(e) =>
                   setJobForm({
@@ -332,7 +357,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.city}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="City"
                 onChange={(e) =>
                   setJobForm({
@@ -344,7 +369,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.state}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="State"
                 onChange={(e) =>
                   setJobForm({
@@ -356,7 +381,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.country}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Country"
                 onChange={(e) =>
                   setJobForm({
@@ -368,7 +393,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.coordinates[0]}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Longitude"
                 onChange={(e) =>
                   setJobForm({
@@ -383,7 +408,7 @@ const DashboardPage = () => {
 
               <input
                 value={jobForm.location.coordinates[1]}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Latitude"
                 onChange={(e) =>
                   setJobForm({
@@ -398,7 +423,7 @@ const DashboardPage = () => {
 
               <textarea
                 value={jobForm.description}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 rows="4"
                 placeholder="Job Description"
                 onChange={(e) =>
@@ -406,7 +431,10 @@ const DashboardPage = () => {
                 }
               />
 
-              <button className="rounded-xl bg-slate-900 p-3 text-white dark:bg-indigo-600">
+              <button
+                type="submit"
+                className="rounded-xl bg-slate-900 p-3 text-white dark:bg-indigo-600"
+              >
                 Post Job
               </button>
             </form>
@@ -414,14 +442,19 @@ const DashboardPage = () => {
 
           <div className="space-y-6">
             <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-4 text-xl font-semibold dark:text-white">My Jobs</h2>
+              <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+                My Jobs
+              </h2>
+
               <div className="space-y-3">
                 {jobs.length > 0 ? (
                   jobs.map((job) => (
-                    <div key={job._id} className="rounded-xl border p-4 dark:border-slate-700">
-                      <h3 className="font-semibold dark:text-white">{job.title}</h3>
+                    <div key={job?._id} className="rounded-xl border p-4 dark:border-slate-700">
+                      <h3 className="font-semibold text-slate-800 dark:text-white">
+                        {job?.title}
+                      </h3>
                       <p className="text-sm text-slate-500">
-                        {job.company} • {getLocationText(job.location)}
+                        {job?.company} • {getLocationText(job?.location)}
                       </p>
                     </div>
                   ))
@@ -432,21 +465,28 @@ const DashboardPage = () => {
             </div>
 
             <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-4 text-xl font-semibold dark:text-white">Applications</h2>
+              <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+                Applications
+              </h2>
+              
+
               <div className="space-y-4">
                 {applications.length > 0 ? (
                   applications.map((app) => (
-                    <div key={app._id} className="rounded-xl border p-4 dark:border-slate-700">
-                      <h3 className="font-semibold dark:text-white">{app.job?.title}</h3>
+                    <div key={app?._id} className="rounded-xl border p-4 dark:border-slate-700">
+                      <h3 className="font-semibold text-slate-800 dark:text-white">
+                        {app?.job?.title}
+                      </h3>
                       <p className="text-sm text-slate-500">
-                        {app.jobSeeker?.name} • {app.jobSeeker?.email}
+                        {app?.jobSeeker?.name} • {app?.jobSeeker?.email}
                       </p>
-                      <p className="my-2 text-sm">
-                        Status: <span className="font-semibold">{app.status}</span>
+                      <p className="my-2 text-sm text-slate-700 dark:text-slate-300">
+                        Status: <span className="font-semibold">{app?.status}</span>
                       </p>
+
                       <select
-                        className="rounded-lg border p-2 dark:bg-slate-950"
-                        value={app.status}
+                        className="rounded-lg border p-2 dark:bg-slate-950 dark:text-white"
+                        value={app?.status}
                         onChange={(e) => updateStatus(app._id, e.target.value)}
                       >
                         {['applied', 'reviewing', 'shortlisted', 'rejected', 'hired'].map(
@@ -464,6 +504,8 @@ const DashboardPage = () => {
                 )}
               </div>
             </div>
+
+            
           </div>
         </div>
       )}
@@ -471,55 +513,66 @@ const DashboardPage = () => {
       {user?.role === 'jobseeker' && (
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-4 text-xl font-semibold dark:text-white">Profile Management</h2>
+            <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+              Profile Management
+            </h2>
 
             <form onSubmit={updateProfile} className="grid gap-3">
               <input
                 value={profile.name}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Full Name"
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
               />
+
               <input
                 value={profile.phone}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Phone"
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
               />
+
               <input
                 value={profile.location}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Location"
                 onChange={(e) => setProfile({ ...profile, location: e.target.value })}
               />
+
               <input
                 value={profile.skills}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Skills comma separated"
                 onChange={(e) => setProfile({ ...profile, skills: e.target.value })}
               />
+
               <input
                 value={profile.bio}
-                className="rounded-xl border p-3 dark:bg-slate-950"
+                className="rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
                 placeholder="Short Bio"
                 onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
               />
 
-              <button className="rounded-xl bg-slate-900 p-3 text-white dark:bg-indigo-600">
+              <button
+                type="submit"
+                className="rounded-xl bg-slate-900 p-3 text-white dark:bg-indigo-600"
+              >
                 Save Profile
               </button>
             </form>
 
             <div className="mt-6">
-              <label className="mb-2 block font-semibold dark:text-white">
+              <label className="mb-2 block font-semibold text-slate-800 dark:text-white">
                 Upload Resume (PDF)
               </label>
+
               <input
                 type="file"
                 accept=".pdf"
                 onChange={uploadResume}
-                className="w-full rounded-xl border p-3 dark:bg-slate-950"
+                className="w-full rounded-xl border p-3 dark:bg-slate-950 dark:text-white"
               />
+
               {resume?.fileUrl && (
                 <a
                   href={`http://localhost:5000${resume.fileUrl}`}
@@ -535,17 +588,22 @@ const DashboardPage = () => {
 
           <div className="space-y-6">
             <div className="rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-4 text-xl font-semibold dark:text-white">My Applications</h2>
+              <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+                My Applications
+              </h2>
+
               <div className="space-y-3">
                 {applications.length > 0 ? (
                   applications.map((app) => (
-                    <div key={app._id} className="rounded-xl border p-4 dark:border-slate-700">
-                      <h3 className="font-semibold dark:text-white">{app.job?.title}</h3>
+                    <div key={app?._id} className="rounded-xl border p-4 dark:border-slate-700">
+                      <h3 className="font-semibold text-slate-800 dark:text-white">
+                        {app?.job?.title}
+                      </h3>
                       <p className="text-sm text-slate-500">
-                        {app.job?.company} • {getLocationText(app.job?.location)}
+                        {app?.job?.company} • {getLocationText(app?.job?.location)}
                       </p>
-                      <p className="mt-2 text-sm">
-                        Status: <span className="font-semibold">{app.status}</span>
+                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                        Status: <span className="font-semibold">{app?.status}</span>
                       </p>
                     </div>
                   ))
@@ -559,14 +617,19 @@ const DashboardPage = () => {
       )}
 
       <div className="mt-8 rounded-2xl border bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-4 text-xl font-semibold dark:text-white">Notifications</h2>
+        <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
+          Notifications
+        </h2>
+
         <div className="space-y-3">
           {notifications.length > 0 ? (
             notifications.map((item) => (
-              <div key={item._id} className="rounded-xl border p-4 dark:border-slate-700">
-                <h3 className="font-semibold dark:text-white">{item.title}</h3>
+              <div key={item?._id} className="rounded-xl border p-4 dark:border-slate-700">
+                <h3 className="font-semibold text-slate-800 dark:text-white">
+                  {item?.title}
+                </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  {item.message}
+                  {item?.message}
                 </p>
               </div>
             ))

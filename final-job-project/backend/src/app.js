@@ -12,6 +12,7 @@ import applicationRoutes from './routes/applicationRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import resumeairoutes from './routes/resumeAiRoutes.js';
 import Groq from 'groq-sdk';
 
 
@@ -80,6 +81,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/resume-ai',resumeairoutes);
 
 const io = new Server(server, {
   cors: {
